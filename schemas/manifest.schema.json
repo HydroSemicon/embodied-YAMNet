@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.invalid/daily-sound-manifest-item.schema.json",
+  "type": "object",
+  "required": ["path", "split", "labels", "source_id", "session_id"],
+  "properties": {
+    "path": {"type": "string"},
+    "split": {"enum": ["train", "validation", "test"]},
+    "labels": {"type": "array", "uniqueItems": true, "items": {"enum": ["cough", "sneeze", "laughter", "alarm", "timer_or_ringtone"]}},
+    "source_id": {"type": "string", "minLength": 1},
+    "session_id": {"type": "string", "minLength": 1},
+    "person_id": {"type": ["string", "null"]},
+    "device_id": {"type": ["string", "null"]},
+    "recorded_at": {"type": ["string", "null"], "format": "date-time"},
+    "is_hard_negative": {"type": "boolean"},
+    "playback": {"type": "boolean"},
+    "events": {"type": "array", "items": {"type": "object", "required": ["label", "start_ms", "end_ms"]}}
+  }
+}
+

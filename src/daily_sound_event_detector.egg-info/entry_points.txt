@@ -1,0 +1,2 @@
+[console_scripts]
+sound-detector = daily_sound_detector.cli:main

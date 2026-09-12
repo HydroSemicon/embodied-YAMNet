@@ -1,0 +1,9 @@
+{
+  "gain_db": 6.0,
+  "time_shift_ms": 250,
+  "background_mix": 0.15,
+  "rir": false,
+  "rir_paths": [],
+  "time_stretch": 0.05,
+  "specaugment_mask_fraction": 0.08
+}

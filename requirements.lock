@@ -1,0 +1,13 @@
+# Fully pinned direct runtime/model/test dependencies. Install only the extras needed.
+numpy==1.26.4
+scipy==1.13.1
+sounddevice==0.5.1
+psutil==6.1.1
+tensorflow-cpu==2.15.1
+tensorflow-hub==0.16.1
+tf-keras==2.15.1
+torch==2.5.1
+torchaudio==2.5.1
+pytest==8.3.4
+pytest-cov==6.0.0
+

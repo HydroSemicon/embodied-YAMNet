@@ -1,0 +1,4 @@
+{"path":"data/train/person-a-cough.wav","split":"train","labels":["cough"],"source_id":"vocalsound-speaker-a","session_id":"public-a","person_id":"speaker-a","device_id":null,"is_hard_negative":false,"playback":false,"events":[{"label":"cough","start_ms":240,"end_ms":760}]}
+{"path":"data/validation/room-day1-negative.wav","split":"validation","labels":[],"source_id":"room-day1-recorder","session_id":"room-day1","person_id":null,"device_id":"target-mic","is_hard_negative":true,"playback":false,"events":[]}
+{"path":"data/test/room-day2-sneeze.wav","split":"test","labels":["sneeze"],"source_id":"room-day2-recorder","session_id":"room-day2","person_id":"kokomi","device_id":"target-mic","is_hard_negative":false,"playback":false,"events":[{"label":"sneeze","start_ms":1240,"end_ms":1780}]}
+

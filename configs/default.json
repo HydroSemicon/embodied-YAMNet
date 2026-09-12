@@ -1,0 +1,18 @@
+{
+  "sample_rate": 16000,
+  "hop_ms": 250,
+  "short_window_ms": 1000,
+  "long_window_ms": 2000,
+  "ambiguity_margin": 0.08,
+  "min_rms": 0.0005,
+  "max_abs_dc": 0.05,
+  "max_clipped_fraction": 0.01,
+  "ood_max_distance": null,
+  "classes": {
+    "cough": {"start_threshold": 0.80, "end_threshold": 0.45, "history_frames": 2, "required_frames": 1, "min_duration_ms": 100, "cooldown_ms": 1000, "merge_gap_ms": 400, "max_duration_ms": 4000},
+    "sneeze": {"start_threshold": 0.82, "end_threshold": 0.45, "history_frames": 2, "required_frames": 1, "min_duration_ms": 100, "cooldown_ms": 1500, "merge_gap_ms": 400, "max_duration_ms": 4000},
+    "laughter": {"start_threshold": 0.75, "end_threshold": 0.40, "history_frames": 3, "required_frames": 2, "min_duration_ms": 500, "cooldown_ms": 750, "merge_gap_ms": 750, "max_duration_ms": 15000},
+    "alarm": {"start_threshold": 0.82, "end_threshold": 0.50, "history_frames": 5, "required_frames": 3, "min_duration_ms": 750, "cooldown_ms": 1000, "merge_gap_ms": 1000, "max_duration_ms": 30000},
+    "timer_or_ringtone": {"start_threshold": 0.82, "end_threshold": 0.48, "history_frames": 4, "required_frames": 3, "min_duration_ms": 750, "cooldown_ms": 1000, "merge_gap_ms": 1000, "max_duration_ms": 20000}
+  }
+}

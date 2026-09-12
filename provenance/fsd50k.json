@@ -1,0 +1,34 @@
+{
+  "dataset": "FSD50K",
+  "version": "1.0",
+  "record": "https://zenodo.org/records/4060432",
+  "doi": "10.5281/zenodo.4060432",
+  "dataset_license": "CC BY 4.0",
+  "clip_license_note": "Each clip retains its uploader-selected CC license; see the generated attribution JSONL.",
+  "archives": {
+    "FSD50K.ground_truth.zip": {"md5": "ca27382c195e37d2269c4c866dd73485"},
+    "FSD50K.metadata.zip": {"md5": "b9ea0c829a411c1d42adb9da539ed237"},
+    "FSD50K.doc.zip": {"md5": "3516162b82dc2945d3e7feba0904e800"},
+    "FSD50K.dev_audio.z01": {"md5": "faa7cf4cc076fc34a44a479a5ed862a3"},
+    "FSD50K.dev_audio.z02": {"md5": "8f9b66153e68571164fb1315d00bc7bc"},
+    "FSD50K.dev_audio.z03": {"md5": "1196ef47d267a993d30fa98af54b7159"},
+    "FSD50K.dev_audio.z04": {"md5": "d088ac4e11ba53daf9f7574c11cccac9"},
+    "FSD50K.dev_audio.z05": {"md5": "81356521aa159accd3c35de22da28c7f"},
+    "FSD50K.dev_audio.zip": {"md5": "c480d119b8f7a7e32fdb58f3ea4d6c5a"}
+  },
+  "selection": {
+    "targets": {
+      "Cough": "cough",
+      "Sneeze": "sneeze",
+      "Laughter": "laughter",
+      "Siren": "alarm",
+      "Ringtone": "timer_or_ringtone"
+    },
+    "hard_negatives": ["Bell", "Chime", "Clock", "Doorbell", "Microwave_oven", "Telephone"],
+    "excluded_as_ambiguous": ["Alarm"],
+    "general_negatives_per_primary_label": 20,
+    "validation_percent": 25,
+    "split_group": "Freesound uploader",
+    "split_algorithm": "SHA-256 uploader hash with fixed fsd50k-uploader-split-v1 salt"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "model": {
+    "name": "BEATs_iter3+_AS2M",
+    "local_path": "checkpoints/BEATs_iter3+_AS2M.pt",
+    "url": "https://1drv.ms/u/s!AqeByhGUtINrgcpke6_lRSZEKD5j2Q?e=A3FpOf",
+    "size_bytes": 361499833,
+    "sha256": "d43cbfad4d7b56381c061d7a24774f908d4d94c72961f6eb1d9090ff18cd8d34",
+    "embedding_dimension": 768,
+    "finetuned_model": false,
+    "redistributed": false
+  },
+  "source": {
+    "repository": "https://github.com/microsoft/unilm.git",
+    "subdirectory": "beats",
+    "commit": "ca43e4cd19445a536f133bf2bc25b573b2f0c7c5",
+    "license": "MIT",
+    "redistributed": false
+  }
+}

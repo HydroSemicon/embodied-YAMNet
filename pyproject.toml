@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools==80.10.2", "wheel==0.45.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "daily-sound-event-detector"
+version = "0.1.0"
+description = "Five-class, reject-capable daily sound event detector"
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+  "numpy==1.26.4",
+  "scipy==1.13.1",
+  "sounddevice==0.5.1",
+  "psutil==6.1.1",
+]
+
+[project.optional-dependencies]
+yamnet = ["tensorflow-cpu==2.15.1", "tensorflow-hub==0.16.1", "tf-keras==2.15.1"]
+beats = ["torch==2.5.1", "torchaudio==2.5.1"]
+dev = ["pytest==8.3.4", "pytest-cov==6.0.0"]
+
+[project.scripts]
+sound-detector = "daily_sound_detector.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+

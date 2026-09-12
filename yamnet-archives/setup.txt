@@ -1,0 +1,10 @@
+マイクに設定してるサンプリングレートと「sr」の値を一致させる．
+
+echo yamnet-py311/ >> .gitignore
+py -3.11 -m venv yamnet-py311
+yamnet-py311\Scripts\activate
+pip install --upgrade pip==25.3 setuptools==80.10.2 wheel
+pip install tensorflow-cpu==2.15.0 tensorflow-hub==0.15.0 numpy==1.26.4 sounddevice matplotlib pandas scipy ipykernel
+python -m ipykernel install --user --name yamnet-cpu --display-name "YAMNet (CPU)-new"
+rmdir /s /q "%LOCALAPPDATA%\Temp\tfhub_modules"（JupyterLabの古いカーネルキャッシュを削除）
+pip freeze > requirements.txt

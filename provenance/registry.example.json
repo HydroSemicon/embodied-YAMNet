@@ -1,0 +1,42 @@
+{
+  "models": [
+    {
+      "name": "YAMNet/1",
+      "url": "https://tfhub.dev/google/yamnet/1",
+      "sha256": "RECORD_THE_RESOLVED_LOCAL_MODULE_CHECKSUM",
+      "license": "Apache-2.0 (verify the downloaded model card/assets)",
+      "redistributed": false
+    },
+    {
+      "name": "BEATs_iter3+_AS2M",
+      "url": "https://1drv.ms/u/s!AqeByhGUtINrgcpke6_lRSZEKD5j2Q?e=A3FpOf",
+      "sha256": "REQUIRED_AFTER_DOWNLOAD",
+      "license": "MIT for microsoft/unilm code; verify checkpoint terms at download time",
+      "redistributed": false
+    }
+  ],
+  "datasets": [
+    {
+      "name": "VocalSound 16 kHz",
+      "url": "https://github.com/YuanGongND/vocalsound",
+      "sha256": "REQUIRED_AFTER_DOWNLOAD",
+      "license": "CC BY-SA 4.0",
+      "redistributed": false
+    },
+    {
+      "name": "FSD50K",
+      "url": "https://doi.org/10.5281/zenodo.4060432",
+      "sha256": "USE_ZENODO_FILE_CHECKSUMS_AND_RECORD_THEM_HERE",
+      "license": "Dataset-level and per-clip terms; inspect LICENSE-DATASET and clip metadata",
+      "redistributed": false
+    },
+    {
+      "name": "local_target_environment",
+      "url": "local recording protocol",
+      "sha256": "MANIFEST_CONTAINS_PER_FILE_SHA256_AFTER_PREPARE_DATASET",
+      "license": "Internal; obtain consent from recorded people",
+      "redistributed": false
+    }
+  ]
+}
+

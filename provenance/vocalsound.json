@@ -1,0 +1,24 @@
+{
+  "dataset": "VocalSound",
+  "release": "vs_release_16k.zip",
+  "source_repository": "https://github.com/YuanGongND/vocalsound",
+  "download_url": "https://www.dropbox.com/s/c5ace70qh1vbyzb/vs_release_16k.zip?dl=1",
+  "downloaded_at": "2026-09-13",
+  "archive_size_bytes": 1783406544,
+  "archive_sha256": "66b83ee62e79c059b051c6f4afac06497945931c10c7f643a928b92f1ff9b9f2",
+  "license": "CC BY-SA 4.0",
+  "license_file_in_archive": "LICENSE",
+  "official_splits": {
+    "train": "datafiles/tr.json",
+    "validation": "datafiles/val.json",
+    "test": "datafiles/te.json"
+  },
+  "detector_target_mapping": {
+    "cough": "cough",
+    "sneeze": "sneeze",
+    "laughter": "laughter",
+    "sigh": "hard_negative",
+    "sniff": "hard_negative",
+    "throatclearing": "hard_negative"
+  }
+}
