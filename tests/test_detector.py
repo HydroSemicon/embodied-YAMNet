@@ -6,7 +6,6 @@ import tempfile
 import unittest
 import wave
 from contextlib import redirect_stdout
-from dataclasses import asdict, replace
 from pathlib import Path
 
 import numpy as np
@@ -14,7 +13,7 @@ import numpy as np
 from daily_sound_detector.audio import AudioQuality, RingBuffer, iter_windows, read_wav, resample, to_mono
 from daily_sound_detector.config import ClassDecisionConfig, DetectorConfig, load_config
 from daily_sound_detector.evaluation import evaluate_clips
-from daily_sound_detector.manifest import ManifestItem, leakage_report, read_manifest, write_prepared_index
+from daily_sound_detector.manifest import ManifestItem, leakage_report, write_prepared_index
 from daily_sound_detector.models import LinearHead, MockExtractor, TransferScorer, train_linear_head
 from daily_sound_detector.temporal import TemporalDecisionEngine
 from daily_sound_detector.training import label_vector
