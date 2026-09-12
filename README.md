@@ -2,7 +2,7 @@
 
 ![Status](https://img.shields.io/badge/status-research%20prototype-6f42c1)
 ![Task](https://img.shields.io/badge/task-5--class%20sound%20events-0b7285)
-[![CI](https://github.com/taka-k22/embodied-YAMNet/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/taka-k22/embodied-YAMNet/actions/workflows/test.yml?query=branch%3Amain)
+[![CI](https://github.com/HydroSemicon/embodied-YAMNet/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/HydroSemicon/embodied-YAMNet/actions/workflows/test.yml?query=branch%3Amain)
 ![Runtime](https://img.shields.io/badge/runtime-Python%203.11-3776ab?logo=python&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
