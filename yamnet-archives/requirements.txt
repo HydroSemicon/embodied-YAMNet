@@ -42,7 +42,7 @@ opt_einsum==3.4.0
 packaging==26.2
 pandas==3.0.3
 parso==0.8.7
-pillow==12.2.0
+pillow==13.0.0
 platformdirs==4.10.0
 prompt_toolkit==3.0.52
 protobuf==4.25.9
