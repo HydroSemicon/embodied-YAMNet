@@ -24,6 +24,28 @@ The detector is designed for controlled research deployment rather than general-
 | Live microphone inference | Implemented | Emits finalized JSONL events and optionally records raw diagnostics or audio |
 | Deployment model | Not selected | Selection requires environment-specific validation and test evidence |
 
+## Cough-only candidate
+
+The current narrowed deployment target is `cough` only. The original five-class pipeline remains available for research compatibility, while `configs/cough_only.json` enables only cough decisions. Disabled class scores cannot create events or suppress cough through the multi-class ambiguity rule.
+
+Train the cough-only head from the existing frozen-BEATs embedding cache:
+
+```bat
+python scripts\train_beats_cough_from_cache.py
+```
+
+The generated public-data candidate is written to `artifacts/beats-cough-public/`. It is deliberately marked `deployment_ready: false` until target-room continuous evaluation is complete. Its current public test result is precision 0.930, recall 0.667, and F1 0.778; these values do not meet the deployment target.
+
+Run the candidate interactively:
+
+```bat
+sound-detector live --model beats_transfer --head artifacts\beats-cough-public\head_calibrated.npz --checkpoint checkpoints\BEATs_iter3+_AS2M.pt --beats-source vendor\unilm\beats\BEATs.py --config artifacts\beats-cough-public\config_calibrated.json --event-log artifacts\live\cough-events.jsonl --raw-log artifacts\live\cough-raw.jsonl --inference-device cuda --events-only
+```
+
+Use `--stdout-jsonl` instead of `--events-only` for a supervising process. That mode writes only finalized event objects to stdout, keeps diagnostics on stderr, and omits the shutdown summary. `sound-detector list-input-devices` lists numeric values accepted by `--device`.
+
+Long recordings specified with `--record-wav` are streamed directly to disk rather than retained in memory. See [the cough-only handoff](docs/COUGH_ONLY_HANDOFF.md) for the process boundary, microphone-coexistence test, and remaining deployment gate.
+
 ## Detection contract
 
 The label order is fixed throughout model heads, configuration, metrics, and serialized artifacts:

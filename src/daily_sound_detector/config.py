@@ -42,6 +42,7 @@ class DetectorConfig:
     max_abs_dc: float = 0.05
     max_clipped_fraction: float = 0.01
     ood_max_distance: float | None = None
+    enabled_labels: tuple[str, ...] = LABELS
     classes: dict[str, ClassDecisionConfig] = field(default_factory=dict)
 
     @classmethod
@@ -50,8 +51,15 @@ class DetectorConfig:
         missing = set(LABELS) - set(raw.get("classes", {}))
         if unknown or missing:
             raise ValueError(f"classes mismatch; missing={sorted(missing)}, unknown={sorted(unknown)}")
-        kwargs = {k: v for k, v in raw.items() if k != "classes"}
-        cfg = cls(classes={k: ClassDecisionConfig.from_dict(v) for k, v in raw["classes"].items()}, **kwargs)
+        enabled = tuple(raw.get("enabled_labels", LABELS))
+        if not enabled or len(enabled) != len(set(enabled)) or set(enabled) - set(LABELS):
+            raise ValueError(f"enabled_labels must be a non-empty unique subset of {list(LABELS)}")
+        kwargs = {k: v for k, v in raw.items() if k not in {"classes", "enabled_labels"}}
+        cfg = cls(
+            enabled_labels=enabled,
+            classes={k: ClassDecisionConfig.from_dict(v) for k, v in raw["classes"].items()},
+            **kwargs,
+        )
         if cfg.sample_rate != 16000 or cfg.hop_ms <= 0:
             raise ValueError("sample_rate must be 16000 and hop_ms must be positive")
         if not 0 <= cfg.ambiguity_margin <= 1:

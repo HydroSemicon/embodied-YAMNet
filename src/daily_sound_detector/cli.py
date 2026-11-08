@@ -12,7 +12,7 @@ from . import LABELS
 from .calibration import calibrate_head, choose_threshold
 from .config import load_config
 from .evaluation import evaluate_clips, evaluate_continuous, score_recording
-from .live import run_live
+from .live import list_input_devices, run_live
 from .manifest import read_manifest, write_prepared_index
 from .models import LinearHead, TransferScorer, YamnetBaseline
 from .reporting import export_report
@@ -56,7 +56,9 @@ def build_parser() -> argparse.ArgumentParser:
     p = commands.add_parser("live"); p.add_argument("--config", required=True); p.add_argument("--event-log", required=True); p.add_argument("--raw-log")
     p.add_argument("--device"); p.add_argument("--duration", type=float); p.add_argument("--record-wav")
     p.add_argument("--events-only", action="store_true", help="Print one line only when an event is finalized")
+    p.add_argument("--stdout-jsonl", action="store_true", help="Write finalized event JSON objects to stdout and no summary")
     _common_model(p)
+    commands.add_parser("list-input-devices")
     p = commands.add_parser("export-report"); p.add_argument("--run-dir", action="append", required=True); p.add_argument("--output", required=True)
     return parser
 
@@ -80,10 +82,11 @@ def main(argv: list[str] | None = None) -> int:
                 clip_scores, _, _ = score_recording(scorer, read_wav(item.path, config.sample_rate)[0], config)
                 scores.append(clip_scores); targets.append([label in item.labels for label in LABELS])
             if not scores: raise ValueError("no validation items")
-            selections, classes = {}, {}
-            for i, label in enumerate(LABELS):
+            selections, classes = {}, dict(config.classes)
+            for label in config.enabled_labels:
+                i = LABELS.index(label)
                 selections[label] = choose_threshold(np.asarray(scores)[:, i], np.asarray(targets)[:, i])
-                old = config.classes[label]; start = float(np.clip(selections[label]["threshold"], .05, .99))
+                old = config.classes[label]; start = float(np.clip(selections[label]["threshold"], .05, 1.0))
                 classes[label] = replace(old, start_threshold=start, end_threshold=min(old.end_threshold, start * .65))
             updated, result = replace(config, classes=classes), {"thresholds": selections, "source_split": "validation", "temperature": None}
             Path(args.output_dir).mkdir(parents=True, exist_ok=True)
@@ -110,8 +113,12 @@ def main(argv: list[str] | None = None) -> int:
                   if args.command == "evaluate" else evaluate_continuous(items, scorer, config, args.output_dir, args.split))
     elif args.command == "live":
         run_live(_load_scorer(args), load_config(args.config), args.event_log, args.raw_log, args.device,
-                 args.duration, args.record_wav, args.events_only)
+                 args.duration, args.record_wav, args.events_only, args.stdout_jsonl)
+        if args.stdout_jsonl:
+            return 0
         result = {"event_log": args.event_log}
+    elif args.command == "list-input-devices":
+        result = list_input_devices()
     else:
         result = export_report(args.run_dir, args.output)
     print(json.dumps(result, indent=2, ensure_ascii=False))
