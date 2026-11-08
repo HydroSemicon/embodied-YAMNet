@@ -34,7 +34,8 @@ class TemporalDecisionEngine:
     def __init__(self, config: DetectorConfig, model_info: dict, start_epoch_ms: int | None = None):
         self.config, self.model_info = config, model_info
         self.start_epoch_ms = start_epoch_ms if start_epoch_ms is not None else int(datetime.now(timezone.utc).timestamp() * 1000)
-        self.states = {label: _State(deque(maxlen=config.classes[label].history_frames)) for label in LABELS}
+        self.labels = tuple(config.enabled_labels)
+        self.states = {label: _State(deque(maxlen=config.classes[label].history_frames)) for label in self.labels}
 
     def _event(self, label: str, state: _State, ended_ms: int) -> dict:
         cfg = self.config.classes[label]
@@ -52,13 +53,19 @@ class TemporalDecisionEngine:
         values = np.asarray(scores, np.float32)
         if values.shape != (5,):
             raise ValueError("scores must have shape [5]")
-        order = np.argsort(values)[::-1]
-        ambiguous = values[order[0]] - values[order[1]] < self.config.ambiguity_margin
+        enabled_indices = np.asarray([LABELS.index(label) for label in self.labels], np.int64)
+        enabled_values = values[enabled_indices]
+        order = np.argsort(enabled_values)[::-1]
+        ambiguous = bool(
+            len(order) > 1
+            and enabled_values[order[0]] - enabled_values[order[1]] < self.config.ambiguity_margin
+        )
         ood = self.config.ood_max_distance is not None and ood_distance is not None and ood_distance > self.config.ood_max_distance
         globally_suppressed = quality.poor or ambiguous or ood
         emitted: list[dict] = []
-        statuses = {}
-        for index, label in enumerate(LABELS):
+        statuses = {label: "disabled" for label in LABELS}
+        for label in self.labels:
+            index = LABELS.index(label)
             state, cfg, score = self.states[label], self.config.classes[label], float(values[index])
             above_start = score >= cfg.start_threshold and not globally_suppressed
             state.history.append(above_start)
@@ -94,7 +101,7 @@ class TemporalDecisionEngine:
                     state.cooldown_until_ms = at_ms + cfg.cooldown_ms
                     state.history.clear()
             statuses[label] = "detected" if state.active else ("pending" if state.pending else ("suppressed" if above_start and globally_suppressed else "idle"))
-        return emitted, {"ambiguous": bool(ambiguous), "quality_reasons": list(quality.reasons), "ood": bool(ood), "statuses": statuses}
+        return emitted, {"ambiguous": ambiguous, "quality_reasons": list(quality.reasons), "ood": bool(ood), "statuses": statuses}
 
     def flush(self, at_ms: int) -> list[dict]:
         output = []
