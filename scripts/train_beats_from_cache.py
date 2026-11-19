@@ -226,7 +226,7 @@ def _binary_metrics(target: np.ndarray, predicted: np.ndarray) -> dict:
     fp = int(np.sum((target == 0) & predicted))
     fn = int(np.sum((target == 1) & ~predicted))
     tn = int(np.sum((target == 0) & ~predicted))
-    precision = tp / (tp + fp) if tp + fp else 1.0
+    precision = tp / (tp + fp) if tp + fp else 0.0
     recall = tp / (tp + fn) if tp + fn else None
     f1 = 2 * precision * recall / (precision + recall) if recall is not None and precision + recall else None
     return {
@@ -289,7 +289,7 @@ def run_pipeline(
         selection = choose_threshold(validation_scores[:, index], validation_targets[:, index])
         selections[label] = selection
         old = config.classes[label]
-        start = float(np.clip(selection["threshold"], 0.05, 0.99))
+        start = float(np.clip(selection["threshold"], 0.05, 1.0))
         class_configs[label] = replace(
             old,
             start_threshold=start,

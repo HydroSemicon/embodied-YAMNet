@@ -6,11 +6,13 @@ import tempfile
 import unittest
 import wave
 from contextlib import redirect_stdout
+from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
 
 from daily_sound_detector.audio import AudioQuality, RingBuffer, iter_windows, read_wav, resample, to_mono
+from daily_sound_detector.calibration import choose_threshold, precision_recall_points
 from daily_sound_detector.config import ClassDecisionConfig, DetectorConfig, load_config
 from daily_sound_detector.evaluation import evaluate_clips
 from daily_sound_detector.manifest import ManifestItem, leakage_report, write_prepared_index
@@ -19,7 +21,7 @@ from daily_sound_detector.temporal import TemporalDecisionEngine
 from daily_sound_detector.training import label_vector
 from daily_sound_detector.cli import main as cli_main
 from daily_sound_detector.cli import build_parser
-from daily_sound_detector.live import _flush_live_events, _print_live_update
+from daily_sound_detector.live import _StreamingPcm16Writer, _flush_live_events, _print_live_update
 
 ROOT = Path(__file__).resolve().parents[1]
 GOOD = AudioQuality(.1, 0, 0, False, False, ())
@@ -103,6 +105,26 @@ class ConfigTests(unittest.TestCase):
         self.assertLess(cfg.classes["alarm"].start_threshold, .82)
         self.assertGreaterEqual(cfg.classes["timer_or_ringtone"].history_frames, 8)
 
+    def test_cough_only_profile(self):
+        cfg = load_config(ROOT / "configs" / "cough_only.json")
+        self.assertEqual(cfg.enabled_labels, ("cough",))
+
+    def test_enabled_labels_reject_unknown_or_duplicate_values(self):
+        raw = json.loads((ROOT / "configs" / "default.json").read_text())
+        for labels in ([], ["cough", "cough"], ["not_a_label"]):
+            raw["enabled_labels"] = labels
+            with self.subTest(labels=labels), self.assertRaisesRegex(ValueError, "enabled_labels"):
+                DetectorConfig.from_dict(raw)
+
+
+class CalibrationTests(unittest.TestCase):
+    def test_empty_prediction_is_not_perfect_precision(self):
+        points = precision_recall_points(np.asarray([.2, .3]), np.asarray([1, 0]))
+        self.assertEqual(points[-1]["precision"], 0.0)
+        chosen = choose_threshold(np.asarray([.2, .3]), np.asarray([1, 0]))
+        self.assertLess(chosen["threshold"], 1.0)
+        self.assertGreater(chosen["recall"], 0.0)
+
 
 class TemporalTests(unittest.TestCase):
     def engine(self, **kwargs):
@@ -129,6 +151,14 @@ class TemporalTests(unittest.TestCase):
         engine = self.engine()
         _, decision = engine.update(np.array([.9, .88, 0, 0, 0]), 0, GOOD)
         self.assertTrue(decision["ambiguous"]); self.assertFalse(any(s.active for s in engine.states.values()))
+
+    def test_cough_only_ignores_disabled_class_scores_and_ambiguity(self):
+        config = replace(test_config(), enabled_labels=("cough",))
+        engine = TemporalDecisionEngine(config, {"architecture": "mock", "checkpoint": "none", "classifier_version": "test"}, 0)
+        _, decision = engine.update(np.array([.9, .89, .99, .99, .99]), 0, GOOD)
+        self.assertFalse(decision["ambiguous"])
+        self.assertTrue(engine.states["cough"].active)
+        self.assertEqual(decision["statuses"]["sneeze"], "disabled")
 
     def test_quality_rejects(self):
         poor = AudioQuality(0, 0, 0, True, True, ("silent",))
@@ -229,6 +259,19 @@ class LiveConsoleTests(unittest.TestCase):
         self.assertIn("label=cough", lines[0]); self.assertIn("confidence=0.934", lines[0])
         self.assertIn("duration_ms=750", lines[0]); self.assertIn("model=yamnet_transfer", lines[0])
 
+    def test_stdout_jsonl_prints_exact_event_object(self):
+        event = {
+            "schema_version": "1.0", "event_id": "evt_test", "label": "cough", "confidence": .934,
+            "started_at": "2026-09-13T00:00:00.000Z", "ended_at": "2026-09-13T00:00:01.250Z",
+            "duration_ms": 1250, "source": "microphone",
+            "model": {"architecture": "beats_cough_transfer", "checkpoint": "test", "classifier_version": "test"},
+            "decision": {"start_threshold": .9, "peak_score": .934, "frames_above_threshold": 2},
+        }
+        output = io.StringIO()
+        with redirect_stdout(output):
+            _print_live_update(False, [event], "unused", np.zeros(5), self.decision(), test_config(), True)
+        self.assertEqual(json.loads(output.getvalue()), event)
+
     def test_legacy_live_detail_output_is_preserved(self):
         output = io.StringIO()
         with redirect_stdout(output):
@@ -244,6 +287,14 @@ class LiveConsoleTests(unittest.TestCase):
             "--event-log", "events.jsonl", "--events-only",
         ])
         self.assertTrue(args.events_only)
+
+    def test_cli_accepts_machine_jsonl_and_device_listing(self):
+        args = build_parser().parse_args([
+            "live", "--model", "mock_transfer", "--head", "head.npz", "--config", "config.json",
+            "--event-log", "events.jsonl", "--stdout-jsonl",
+        ])
+        self.assertTrue(args.stdout_jsonl)
+        self.assertEqual(build_parser().parse_args(["list-input-devices"]).command, "list-input-devices")
 
     def test_events_only_prints_and_persists_flush_event(self):
         event = {
@@ -266,6 +317,18 @@ class LiveConsoleTests(unittest.TestCase):
             self.assertEqual(flushed, [event]); self.assertEqual(engine.elapsed_ms, 1250)
             self.assertEqual(len(output.getvalue().splitlines()), 1)
             self.assertEqual(json.loads(event_log.read_text(encoding="utf-8"))["event_id"], "evt_test")
+
+    def test_streaming_wav_writer_produces_valid_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "capture.wav"
+            writer = _StreamingPcm16Writer(target, 16000)
+            writer.write(np.full(1600, .25, np.float32))
+            writer.write(np.full(800, -.25, np.float32))
+            writer.close()
+            with wave.open(str(target), "rb") as handle:
+                self.assertEqual(handle.getnchannels(), 1)
+                self.assertEqual(handle.getframerate(), 16000)
+                self.assertEqual(handle.getnframes(), 2400)
 
 
 if __name__ == "__main__":

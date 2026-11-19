@@ -48,7 +48,7 @@ prompt_toolkit==3.0.52
 protobuf==4.25.9
 psutil==7.2.2
 pure_eval==0.2.3
-pyasn1==0.6.3
+pyasn1==0.6.5
 pyasn1_modules==0.4.2
 pycparser==3.0
 Pygments==2.20.0
@@ -71,7 +71,7 @@ tensorflow-intel==2.15.0
 tensorflow-io-gcs-filesystem==0.31.0
 termcolor==3.3.0
 tf_keras==2.15.1
-tornado==6.5.7
+tornado==6.6.1
 traitlets==5.15.1
 typing_extensions==4.15.0
 tzdata==2026.2
