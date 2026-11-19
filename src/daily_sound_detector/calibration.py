@@ -13,9 +13,11 @@ from .models import LinearHead, sigmoid
 
 def fit_temperature(logits: np.ndarray, targets: np.ndarray) -> np.ndarray:
     logits, targets = np.asarray(logits), np.asarray(targets)
-    temperatures = np.ones(5, np.float32)
+    if logits.ndim != 2 or targets.shape != logits.shape:
+        raise ValueError("logits and targets must have matching [N,C] shapes")
+    temperatures = np.ones(logits.shape[1], np.float32)
     candidates = np.geomspace(0.25, 4.0, 81)
-    for column in range(5):
+    for column in range(logits.shape[1]):
         losses = []
         for value in candidates:
             p = sigmoid(logits[:, column] / value)
@@ -32,7 +34,9 @@ def precision_recall_points(scores: np.ndarray, targets: np.ndarray) -> list[dic
         tp = int(np.sum(predicted & (targets == 1)))
         fp = int(np.sum(predicted & (targets == 0)))
         fn = int(np.sum(~predicted & (targets == 1)))
-        precision = tp / (tp + fp) if tp + fp else 1.0
+        # Precision is undefined when the model emits nothing. Treating that
+        # case as perfect previously selected a useless threshold of 1.0.
+        precision = tp / (tp + fp) if tp + fp else 0.0
         recall = tp / (tp + fn) if tp + fn else 0.0
         points.append({"threshold": float(threshold), "precision": precision, "recall": recall})
     return points
@@ -48,15 +52,18 @@ def choose_threshold(scores: np.ndarray, targets: np.ndarray, min_precision: flo
 def calibrate_head(head: LinearHead, embeddings: np.ndarray, targets: np.ndarray, config: DetectorConfig,
                    output_dir: str | Path) -> tuple[LinearHead, DetectorConfig, dict]:
     logits = head.logits(embeddings)
-    temperature = fit_temperature(logits, targets)
+    active_indices = [LABELS.index(label) for label in config.enabled_labels]
+    temperature = np.ones(len(LABELS), np.float32)
+    temperature[active_indices] = fit_temperature(logits[:, active_indices], targets[:, active_indices])
     calibrated = LinearHead(head.weights, head.bias, temperature)
     scores = calibrated.predict(embeddings)
-    selections, classes = {}, {}
-    for i, label in enumerate(LABELS):
+    selections, classes = {}, dict(config.classes)
+    for label in config.enabled_labels:
+        i = LABELS.index(label)
         selection = choose_threshold(scores[:, i], targets[:, i])
         selections[label] = selection
         old = config.classes[label]
-        start = float(np.clip(selection["threshold"], 0.05, 0.99))
+        start = float(np.clip(selection["threshold"], 0.05, 1.0))
         end = min(old.end_threshold, max(0.01, start * 0.65))
         classes[label] = replace(old, start_threshold=start, end_threshold=end)
     updated = replace(config, classes=classes)
