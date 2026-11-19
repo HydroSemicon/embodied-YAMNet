@@ -45,9 +45,10 @@ def tune_temporal(items: list[ManifestItem], scorer: Scorer, config: DetectorCon
         recordings.append((item, frames, len(waveform) / config.sample_rate))
     if not recordings: raise ValueError("temporal tuning requires validation recordings")
     updated, details = dict(config.classes), {}
-    for column, label in enumerate(LABELS):
+    for label in config.enabled_labels:
+        column = LABELS.index(label)
         base = updated[label]; trials = []
-        starts = sorted(set(float(np.clip(base.start_threshold + delta, .05, .99)) for delta in (-.08, 0, .08)))
+        starts = sorted(set(float(np.clip(base.start_threshold + delta, .05, 1.0)) for delta in (-.08, 0, .08)))
         required_values = sorted(set(max(1, min(base.history_frames, base.required_frames + delta)) for delta in (-1, 0, 1)))
         cooldown_values = sorted(set(max(0, int(base.cooldown_ms * factor)) for factor in (.5, 1, 1.5)))
         for start in starts:
@@ -60,7 +61,7 @@ def tune_temporal(items: list[ManifestItem], scorer: Scorer, config: DetectorCon
                             found = _detect(frames, column, start, end, base.history_frames, required,
                                             base.min_duration_ms, cooldown, config.hop_ms)
                             expected = [(recording_index, int(e["start_ms"]), int(e["end_ms"])) for e in item.events if e["label"] == label]
-                            if not item.events and not item.labels:
+                            if not expected and not any(value in config.enabled_labels for value in item.labels):
                                 negative_seconds += seconds; negative_fp += len(found)
                             truths.extend(expected); detections.extend((recording_index, start_ms, end_ms) for start_ms, end_ms in found)
                         matched, latencies, used = 0, [], set()

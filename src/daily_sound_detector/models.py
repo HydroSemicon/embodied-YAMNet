@@ -194,13 +194,13 @@ def train_linear_head(x: np.ndarray, y: np.ndarray, epochs: int = 300, learning_
 class TransferScorer(Scorer):
     def __init__(self, extractor: EmbeddingExtractor, head: LinearHead, checkpoint: str, version: str, metadata: dict | None = None):
         self.extractor, self.head = extractor, head
-        self.architecture = f"{extractor.name}_transfer"
+        metadata = metadata or {}
+        self.architecture = str(metadata.get("architecture", f"{extractor.name}_transfer"))
         self.checkpoint, self.classifier_version = checkpoint, version
         self.device = getattr(extractor, "device", "cpu")
         self.model_size_bytes = int(head.weights.nbytes + head.bias.nbytes + head.temperature.nbytes)
         checkpoint_path = Path(checkpoint)
         if checkpoint_path.is_file(): self.model_size_bytes += checkpoint_path.stat().st_size
-        metadata = metadata or {}
         self._ood_center = np.asarray(metadata.get("ood_center", []), np.float32)
         self._ood_scale = np.asarray(metadata.get("ood_scale", []), np.float32)
         self.last_ood_distance: float | None = None

@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0",
+  "artifact_role": "public-data cough-only candidate; not production-selected",
+  "architecture": "beats_cough_transfer",
+  "enabled_labels": ["cough"],
+  "classifier_version": "cf82e2c1287fe3b827bd5f1918c65392ba533e13edece8e712472e14b979dedb",
+  "artifact_directory": "artifacts/beats-cough-public",
+  "training": {
+    "encoder_frozen": true,
+    "epochs": 400,
+    "seed": 17,
+    "train_clips": 20697,
+    "validation_clips": 3294,
+    "embedding_cache": "artifacts/beats-cache/public-combined",
+    "cache_manifest_sha256": "dd3ea455ca0fd0b6bdf770dad3da14485c8d71f6e0a11c51ab92d72a19eb5dbb"
+  },
+  "encoder": {
+    "checkpoint": "checkpoints/BEATs_iter3+_AS2M.pt",
+    "checkpoint_sha256": "d43cbfad4d7b56381c061d7a24774f908d4d94c72961f6eb1d9090ff18cd8d34",
+    "source": "vendor/unilm/beats/BEATs.py",
+    "source_sha256": "aac21ccc6114cec38c5095658fdea4d69525da46f91b34fb3bd7edccad70c050"
+  },
+  "validation_calibration": {
+    "threshold": 0.99,
+    "precision": 0.9518072289156626,
+    "recall": 0.6713881019830028,
+    "temperature": 0.7071067690849304,
+    "ood_max_distance": 1.923782896995537
+  },
+  "public_test": {
+    "clips": 3591,
+    "precision": 0.9300699300699301,
+    "recall": 0.6672240802675585,
+    "f1": 0.7770204479065239,
+    "tp": 399,
+    "fp": 30,
+    "fn": 199,
+    "tn": 2963
+  },
+  "deployment_ready": false,
+  "blockers": [
+    "public test precision is below 0.95",
+    "public test recall is below 0.80",
+    "target-room continuous negative false positives per hour are unmeasured",
+    "target-room timestamped event latency is unmeasured",
+    "simultaneous Kokomi browser conversation and detector capture requires an operator test"
+  ]
+}

@@ -22,7 +22,7 @@ def _binary_metrics(target: np.ndarray, predicted: np.ndarray) -> dict:
     fp = int(np.sum((target == 0) & (predicted == 1)))
     fn = int(np.sum((target == 1) & (predicted == 0)))
     tn = int(np.sum((target == 0) & (predicted == 0)))
-    precision = tp / (tp + fp) if tp + fp else 1.0
+    precision = tp / (tp + fp) if tp + fp else 0.0
     recall = tp / (tp + fn) if tp + fn else 0.0
     f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
     return {"precision": precision, "recall": recall, "f1": f1, "tp": tp, "fp": fp, "fn": fn, "tn": tn}
@@ -66,14 +66,22 @@ def evaluate_clips(items: list[ManifestItem], scorer: Scorer, config: DetectorCo
     if not targets:
         raise ValueError(f"no recordings for split {split!r}")
     y, p = np.stack(targets), np.stack(scores)
-    thresholds = np.asarray([config.classes[label].start_threshold for label in LABELS])
-    predicted = p >= thresholds
-    per_class = {label: _binary_metrics(y[:, i], predicted[:, i]) for i, label in enumerate(LABELS)}
+    active_labels = tuple(config.enabled_labels)
+    active_indices = [LABELS.index(label) for label in active_labels]
+    thresholds = np.asarray([config.classes[label].start_threshold for label in active_labels])
+    predicted = p[:, active_indices] >= thresholds
+    per_class = {
+        label: _binary_metrics(y[:, LABELS.index(label)], predicted[:, index])
+        for index, label in enumerate(active_labels)
+    }
     false_negatives, false_positives = [], []
     for row, truth, pred in zip(records, y, predicted):
-        for i, label in enumerate(LABELS):
-            if truth[i] and not pred[i]: false_negatives.append({"path": row["path"], "label": label, "score": row["scores"][i]})
-            if not truth[i] and pred[i]: false_positives.append({"path": row["path"], "label": label, "score": row["scores"][i]})
+        for active_index, label in enumerate(active_labels):
+            label_index = LABELS.index(label)
+            if truth[label_index] and not pred[active_index]:
+                false_negatives.append({"path": row["path"], "label": label, "score": row["scores"][label_index]})
+            if not truth[label_index] and pred[active_index]:
+                false_positives.append({"path": row["path"], "label": label, "score": row["scores"][label_index]})
     _, peak_memory = tracemalloc.get_traced_memory(); tracemalloc.stop()
     summary = {
         "model": {"architecture": scorer.architecture, "checkpoint": scorer.checkpoint, "classifier_version": scorer.classifier_version},
@@ -88,14 +96,18 @@ def evaluate_clips(items: list[ManifestItem], scorer: Scorer, config: DetectorCo
     (out / "metrics.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     (out / "false_negatives.json").write_text(json.dumps(false_negatives, indent=2), encoding="utf-8")
     (out / "false_positives.json").write_text(json.dumps(false_positives, indent=2), encoding="utf-8")
-    for i, label in enumerate(LABELS):
+    for label in active_labels:
+        i = LABELS.index(label)
         with (out / f"pr_curve_{label}.csv").open("w", newline="", encoding="utf-8") as handle:
             writer = csv.DictWriter(handle, fieldnames=["threshold", "precision", "recall"]); writer.writeheader()
             writer.writerows(precision_recall_points(p[:, i], y[:, i]))
-    matrix = np.zeros((6, 6), np.int64)
-    for truth, pred_scores in zip(y, p):
-        true_idx = int(np.argmax(truth)) if truth.any() else 5
-        pred_idx = int(np.argmax(pred_scores)) if pred_scores.max() >= thresholds[int(np.argmax(pred_scores))] else 5
+    unknown_index = len(active_labels)
+    matrix = np.zeros((unknown_index + 1, unknown_index + 1), np.int64)
+    for truth, pred_scores in zip(y, p[:, active_indices]):
+        active_truth = truth[active_indices]
+        true_idx = int(np.argmax(active_truth)) if active_truth.any() else unknown_index
+        best = int(np.argmax(pred_scores))
+        pred_idx = best if pred_scores[best] >= thresholds[best] else unknown_index
         matrix[true_idx, pred_idx] += 1
     np.savetxt(out / "confusion_matrix.csv", matrix, fmt="%d", delimiter=",")
     return summary
@@ -124,9 +136,10 @@ def evaluate_continuous(items: list[ManifestItem], scorer: Scorer, config: Detec
         for event in local:
             detections.append({"path": str(item.path), "label": event["label"], "start_ms": _relative_ms(event["started_at"]),
                                "end_ms": _relative_ms(event["ended_at"]), "confidence": event["confidence"]})
-        for event in item.events:
+        relevant_events = [event for event in item.events if event["label"] in config.enabled_labels]
+        for event in relevant_events:
             truths.append({"path": str(item.path), "label": event["label"], "start_ms": int(event["start_ms"]), "end_ms": int(event["end_ms"])})
-        if not item.events and not item.labels:
+        if not relevant_events and not any(label in config.enabled_labels for label in item.labels):
             negative_seconds += len(waveform) / config.sample_rate
             negative_paths.add(str(item.path))
     matched_truth, matched_detection, latencies = set(), set(), []
